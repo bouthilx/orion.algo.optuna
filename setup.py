@@ -10,7 +10,7 @@ import versioneer
 
 repo_root = os.path.dirname(os.path.abspath(__file__))
 
-tests_require = ['pytest>=3.0.0']
+tests_require = ['pytest>=3.0.0', 'matplotlib']
 
 setup_args = dict(
     name='orion.algo.optuna',
@@ -30,7 +30,7 @@ setup_args = dict(
             'optuna_TPEOptimizer = orion.algo.optuna.tpe:TPEOptimizer'
             ],
         },
-    install_requires=['orion.core'],
+    install_requires=['orion.core', 'optuna'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
     extras_require=dict(test=tests_require),
