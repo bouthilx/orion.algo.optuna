@@ -11,12 +11,13 @@ TODO: Write long description
 """
 import copy
 
+import numpy
+
 import optuna
 from optuna.samplers.tpe.sampler import TPESampler
 from optuna.distributions import UniformDistribution
 
 from orion.algo.base import BaseAlgorithm
-from orion.algo.space import Integer
 from orion.algo.space import pack_point, unpack_point
 
 
@@ -45,37 +46,28 @@ def convert_orion_space_to_optuna_dimensions(orion_space):
         #  low = dimension._args[0]
         #  high = low + dimension._args[1]
         low, high = dimension.interval()
-        dimensions[key] = convert_prior(dimension, low, high)
+        dimensions[key] = UniformDistribution(low, high)
 
     return dimensions
 
 
-def convert_prior(dim, low, high):
-    return UniformDistribution(low, high)
+def default_gamma(x):
+    # type: (int) -> int
+
+    return min(int(numpy.ceil(0.25 * numpy.sqrt(x))), 25)
 
 
-def convert_hyperopt_point_to_orion_space(orion_space, point):
-    converted_point = []
-    for key, dimension in orion_space.items():
-        shape = dimension.shape
-        assert not shape or len(shape) == 1
-        if not shape:
-            shape = (1,)
-        # Unpack dimension
-        if shape[0] > 1:
-            converted_point.append([convert_point(dimension, point[key + '_' + str(i)]) for i in range(shape[0])])
-        else:
-            converted_point.append(convert_point(dimension, point[key]))
-        # TODO: Detect if log or not
+def default_weights(x):
+    # type: (int) -> np.ndarray
 
-    return converted_point
-
-
-def convert_point(dim, value):
-    if isinstance(dim, Integer):
-        return int(value)
+    if x == 0:
+        return numpy.asarray([])
+    elif x < 25:
+        return numpy.ones(x)
     else:
-        return value
+        ramp = numpy.linspace(1.0 / x, 1.0, num=x - 25)
+        flat = numpy.ones(25)
+        return numpy.concatenate([ramp, flat], axis=0)
 
 
 class TPEOptimizer(BaseAlgorithm):
@@ -85,11 +77,33 @@ class TPEOptimizer(BaseAlgorithm):
 
     requires = 'linear'
 
-    def __init__(self, space):
+    def __init__(
+            self, space,
+            consider_prior=True,  # type: bool
+            prior_weight=1.0,  # type: float
+            consider_magic_clip=True,  # type: bool
+            consider_endpoints=False,  # type: bool
+            n_startup_trials=10,  # type: int
+            n_ei_candidates=24,  # type: int
+            gamma=default_gamma,  # type: Callable[[int], int]
+            weights=default_weights,  # type: Callable[[int], np.ndarray]
+            seed=None  # type: Optional[int]
+            ):
         """
         TODO: init docstring
         """
-        super(TPEOptimizer, self).__init__(space)
+        super(TPEOptimizer, self).__init__(
+            space,
+            consider_prior=True,  # type: bool
+            prior_weight=1.0,  # type: float
+            consider_magic_clip=True,  # type: bool
+            consider_endpoints=False,  # type: bool
+            n_startup_trials=10,  # type: int
+            n_ei_candidates=24,  # type: int
+            gamma=default_gamma,  # type: Callable[[int], int]
+            weights=default_weights,  # type: Callable[[int], np.ndarray]
+            seed=None  # type: Optional[int]
+            )
 
         self.study = optuna.create_study(sampler=TPESampler())
         self.dimensions = convert_orion_space_to_optuna_dimensions(space)

@@ -49,7 +49,7 @@ def main():
         plt.plot(range(len(objectives)), objectives, label=algo_name)
 
     plt.legend()
-    plt.set_yscale('log')
+    plt.yscale('log')
     plt.show()
 
 
