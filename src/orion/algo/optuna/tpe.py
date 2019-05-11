@@ -152,6 +152,3 @@ class TPEOptimizer(BaseAlgorithm):
             # Report the objective
             trial.report(result['objective'])
             self.study.storage.set_trial_state(trial_id, optuna.structs.TrialState.COMPLETE)
-
-        for trial in self.study.trials:
-            print(trial.value, trial.params)
