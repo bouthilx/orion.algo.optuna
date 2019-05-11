@@ -33,8 +33,8 @@ def main():
         print(" ==== ")
         # experiment name based on file name
         orion.core.cli.main(
-            ["hunt", "--config", algo_config_file, '-n', algo_name,
-                "--max-trials", "40", "--pool-size", "1",
+            ['-vv', "hunt", "--config", algo_config_file, '-n', algo_name,
+                "--max-trials", "100", "--pool-size", "1",
              "./rosenbrock.py", "-x~uniform(-10, 10, shape=2)", "-y~uniform(-10, 10)"])
 
     for algo_name, _ in get_algorithm_configs():
@@ -49,6 +49,7 @@ def main():
         plt.plot(range(len(objectives)), objectives, label=algo_name)
 
     plt.legend()
+    plt.set_yscale('log')
     plt.show()
 
 
