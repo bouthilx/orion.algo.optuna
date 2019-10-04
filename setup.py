@@ -16,12 +16,12 @@ setup_args = dict(
     name='orion.algo.optuna',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    description='TODO',
+    description="Implement a wrapper for optuna optimizers.",
     long_description=open(os.path.join(repo_root, "README.rst")).read(),
     license='BSD-3-Clause',
-    author=u'Xavier Bouthillier',
+    author=u'Epistímio',
     author_email='xavier.bouthillier@umontreal.ca',
-    url='https://github.com/bouthilx/orion.algo.optuna',
+    url='https://github.com/Epistimio/orion.algo.optuna',
     packages=['orion.algo.optuna'],
     package_dir={'': 'src'},
     include_package_data=True,
@@ -30,7 +30,7 @@ setup_args = dict(
             'optuna_TPEOptimizer = orion.algo.optuna.tpe:TPEOptimizer'
             ],
         },
-    install_requires=['orion.core', 'optuna'],
+    install_requires=['orion>=0.1.6', 'optuna>=v0.15.0'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
     extras_require=dict(test=tests_require),
@@ -53,11 +53,12 @@ setup_args['classifiers'] = [
     'Intended Audience :: Developers',
     'Intended Audience :: Education',
     'Intended Audience :: Science/Research',
-    'License :: OSI Approved :: GPU GPLv3',
+    'License :: OSI Approved :: BSD License',
     'Operating System :: POSIX',
     'Operating System :: Unix',
     'Programming Language :: Python',
     'Topic :: Scientific/Engineering',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence',
 ] + [('Programming Language :: Python :: %s' % x)
      for x in '3 3.5 3.6 3.7'.split()]
 
