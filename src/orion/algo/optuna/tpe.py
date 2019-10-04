@@ -75,38 +75,44 @@ class TPEOptimizer(BaseAlgorithm):
     TODO: Class docstring
     """
 
-    requires = 'linear'
+    requires = 'real'
 
     def __init__(
             self, space,
-            consider_prior=True,  # type: bool
-            prior_weight=1.0,  # type: float
-            consider_magic_clip=True,  # type: bool
-            consider_endpoints=False,  # type: bool
-            n_startup_trials=10,  # type: int
-            n_ei_candidates=24,  # type: int
-            gamma=default_gamma,  # type: Callable[[int], int]
-            weights=default_weights,  # type: Callable[[int], np.ndarray]
             seed=None  # type: Optional[int]
             ):
         """
         TODO: init docstring
         """
+        self.study = optuna.create_study(sampler=TPESampler())
+        self.dimensions = convert_orion_space_to_optuna_dimensions(space)
+
         super(TPEOptimizer, self).__init__(
             space,
-            consider_prior=True,  # type: bool
-            prior_weight=1.0,  # type: float
-            consider_magic_clip=True,  # type: bool
-            consider_endpoints=False,  # type: bool
-            n_startup_trials=10,  # type: int
-            n_ei_candidates=24,  # type: int
-            gamma=default_gamma,  # type: Callable[[int], int]
-            weights=default_weights,  # type: Callable[[int], np.ndarray]
             seed=None  # type: Optional[int]
             )
 
-        self.study = optuna.create_study(sampler=TPESampler())
-        self.dimensions = convert_orion_space_to_optuna_dimensions(space)
+    def seed_rng(self, seed):
+        """Seed the state of the random number generator.
+
+        :param seed: Integer seed for the random number generator.
+        """
+        self.study.sampler.rng.seed(seed)
+        self.study.sampler.random_sampler.rng.seed(seed)
+
+    @property
+    def state_dict(self):
+        """Return a state dict that can be used to reset the state of the algorithm."""
+        return {'tpe_rng_state': self.study.sampler.rng.get_state(),
+                'random_rng_state': self.study.sampler.random_sampler.rng.get_state()}
+
+    def set_state(self, state_dict):
+        """Reset the state of the algorithm based on the given state_dict
+
+        :param state_dict: Dictionary representing state of an algorithm
+        """
+        self.study.sampler.rng.set_state(state_dict['tpe_rng_state'])
+        self.study.sampler.random_sampler.rng.set_state(state_dict['random_rng_state'])
 
     def suggest(self, num=1):
         """Suggest a `num`ber of new sets of parameters.
@@ -119,12 +125,12 @@ class TPEOptimizer(BaseAlgorithm):
         # results anyway, so they will be re-introduced in the algo before the next call to
         # `suggest`. We only copy the storage however, otherwise the RNG stote increment inside the
         # samplers would lost.
-        storage = self.study.storage
-        self.study.storage = copy.deepcopy(storage)
+        storage = self.study._storage
+        self.study._storage = copy.deepcopy(storage)
 
         points = []
         for i in range(num):
-            trial_id = self.study.storage.create_new_trial_id(self.study.study_id)
+            trial_id = self.study.storage.create_new_trial(self.study.study_id)
             trial = optuna.trial.Trial(self.study, trial_id)
 
             params = []
@@ -132,11 +138,9 @@ class TPEOptimizer(BaseAlgorithm):
                 distribution = self.dimensions[param_name]
                 params.append(trial._suggest(param_name, distribution))
 
-            # TODO: Re-pack points
-
             points.append(pack_point(params, self.space))
 
-        self.study.storage = storage
+        self.study._storage = storage
 
         return points
 
@@ -153,7 +157,7 @@ class TPEOptimizer(BaseAlgorithm):
             params = unpack_point(point, self.space)
 
             # Create a trial
-            trial_id = self.study.storage.create_new_trial_id(self.study.study_id)
+            trial_id = self.study.storage.create_new_trial(self.study.study_id)
             trial = optuna.trial.Trial(self.study, trial_id)
 
             # Set the params
